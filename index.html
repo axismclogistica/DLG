@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Ingreso de Pedido | Axis MC Logística // DLG Logistic</title>
+<title>Axis MC Logística | Sistema Pedido DLG Logistic</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -22,24 +22,31 @@ min-height:100vh;
 padding:20px;
 }
 
-.container{
-background:#1f2937;
-padding:40px;
-border-radius:15px;
+.wrapper{
+display:flex;
+gap:30px;
 width:100%;
-max-width:600px;
-box-shadow:0 0 40px rgba(0,0,0,.5);
+max-width:1100px;
+flex-wrap:wrap;
 }
 
-.titulo{
+.container, .rastreo-box{
+background:#1f2937;
+padding:30px;
+border-radius:15px;
+box-shadow:0 0 40px rgba(0,0,0,.5);
+flex:1;
+min-width:320px;
+}
+
+h1,h2{
 text-align:center;
-margin-bottom:30px;
-font-size:24px;
+margin-bottom:20px;
 }
 
 label{
 display:block;
-margin-top:15px;
+margin-top:12px;
 }
 
 input{
@@ -51,7 +58,7 @@ margin-top:5px;
 }
 
 button{
-margin-top:25px;
+margin-top:15px;
 padding:14px;
 width:100%;
 border:none;
@@ -62,10 +69,47 @@ font-weight:600;
 cursor:pointer;
 }
 
-button:hover{
-background:#1d4ed8;
+/* ESTADOS */
+.estado{
+font-weight:700;
+padding:8px 14px;
+border-radius:6px;
+display:inline-block;
+margin-top:10px;
 }
 
+.pendiente{background:#ef4444;}
+.ruta{background:#f59e0b;}
+.entregado{background:#22c55e;}
+
+/* TIMELINE */
+.timeline{
+margin-top:20px;
+border-left:2px solid #555;
+padding-left:15px;
+}
+
+.step{
+margin-bottom:15px;
+position:relative;
+}
+
+.step::before{
+content:"";
+position:absolute;
+left:-9px;
+top:5px;
+width:12px;
+height:12px;
+background:#555;
+border-radius:50%;
+}
+
+.step.active::before{
+background:#22c55e;
+}
+
+/* POPUP */
 .popup{
 position:fixed;
 top:0;
@@ -87,10 +131,10 @@ width:90%;
 }
 
 .guia{
-font-size:22px;
+font-size:20px;
 font-weight:700;
 color:#60a5fa;
-margin-bottom:15px;
+margin-bottom:10px;
 }
 
 </style>
@@ -99,9 +143,12 @@ margin-bottom:15px;
 
 <body>
 
+<div class="wrapper">
+
+<!-- FORMULARIO -->
 <div class="container">
 
-<h1 class="titulo">Ingreso de Pedido DLG Logistic</h1>
+<h1>Ingreso Pedido</h1>
 
 <label>Cliente</label>
 <input id="cliente">
@@ -121,8 +168,8 @@ margin-bottom:15px;
 <label>Cantón</label>
 <input id="canton">
 
-<label>Número de Guía DLG</label>
-<input id="guiaDLG" placeholder="Ej: DLG-123456">
+<label>Guía DLG</label>
+<input id="guiaDLG">
 
 <label>Señas</label>
 <input id="senas">
@@ -133,16 +180,31 @@ margin-bottom:15px;
 <label>Horario</label>
 <input id="horario">
 
-<button id="btnEnviar" onclick="enviarPedido()">Guardar Pedido</button>
+<button onclick="enviarPedido()" id="btnEnviar">Guardar Pedido</button>
 
 </div>
 
+<!-- RASTREO -->
+<div class="rastreo-box">
+
+<h2>Rastrear Envío</h2>
+
+<input id="guiaBuscar" placeholder="Ingrese guía">
+
+<button onclick="rastrear()">Buscar</button>
+
+<div id="resultadoRastreo"></div>
+
+</div>
+
+</div>
+
+<!-- POPUP -->
 <div class="popup" id="popup">
 <div class="popup-box">
 
 <h3>Pedido Guardado</h3>
 <div class="guia" id="numeroGuia"></div>
-
 <pre id="popupTexto"></pre>
 
 <button onclick="cerrarPopup()">Aceptar</button>
@@ -152,34 +214,33 @@ margin-bottom:15px;
 
 <script>
 
+/* GENERAR GUIA */
 function generarGuia(){
 
-let now = new Date();
+let now=new Date();
 
-return "AX-" +
-now.getFullYear().toString().slice(2) +
-("0"+(now.getMonth()+1)).slice(-2) +
-("0"+now.getDate()).slice(-2) +
-("0"+now.getHours()).slice(-2) +
-("0"+now.getMinutes()).slice(-2) +
+return "AX-"+
+now.getFullYear().toString().slice(2)+
+("0"+(now.getMonth()+1)).slice(-2)+
+("0"+now.getDate()).slice(-2)+
+("0"+now.getHours()).slice(-2)+
+("0"+now.getMinutes()).slice(-2)+
 ("0"+now.getSeconds()).slice(-2);
 
 }
 
+/* ENVIAR */
 async function enviarPedido(){
 
 let btn=document.getElementById("btnEnviar");
-
 btn.innerText="Guardando...";
 btn.disabled=true;
 
-let guia = generarGuia();
+let guia=generarGuia();
 
 let data={
-
 guia:guia,
 guiaDLG:document.getElementById("guiaDLG").value,
-
 cliente:document.getElementById("cliente").value,
 retiro:document.getElementById("retiro").value,
 telefono:document.getElementById("telefono").value,
@@ -189,38 +250,24 @@ canton:document.getElementById("canton").value,
 senas:document.getElementById("senas").value,
 ubicacion:document.getElementById("ubicacion").value,
 horario:document.getElementById("horario").value
-
 };
 
 try{
 
-await fetch("https://script.google.com/macros/s/AKfycbynQJmJWF_J6H1fSBtjDJW7jpahflAFY3v_oLz9n2-LmcAe99_V4qPvzdPsro8f30fMhg/exec",{
+await fetch("https://script.google.com/macros/s/AKfycbyOQucplHrR9n-yhwZghqiJfgPMQmMxW300WFnFKRaD-50v7iiU7iA_YSbFBukdxc9buw/exec",{
 method:"POST",
 body:new URLSearchParams(data)
 });
 
 document.getElementById("numeroGuia").innerText="Guía: "+guia;
 
-let info =
+document.getElementById("popupTexto").innerText=
 `Guía Axis: ${guia}
 Guía DLG: ${data.guiaDLG}
 
 Cliente: ${data.cliente}
-Teléfono: ${data.telefono}
+Teléfono: ${data.telefono}`;
 
-Provincia: ${data.provincia}
-Cantón: ${data.canton}
-
-Señas:
-${data.senas}
-
-Ubicación:
-${data.ubicacion}
-
-Horario:
-${data.horario}`;
-
-document.getElementById("popupTexto").innerText=info;
 document.getElementById("popup").style.display="flex";
 
 btn.innerText="Guardar Pedido";
@@ -233,6 +280,76 @@ document.querySelectorAll("input").forEach(i=>i.value="");
 alert("Error al guardar");
 btn.innerText="Guardar Pedido";
 btn.disabled=false;
+
+}
+
+}
+
+/* COLORES */
+function colorEstado(estado){
+
+if(estado==="Pendiente") return "pendiente";
+if(estado==="En ruta") return "ruta";
+if(estado==="Entregado") return "entregado";
+
+return "";
+
+}
+
+/* TIMELINE */
+function pintarTimeline(estado){
+
+let pasos=["Pendiente","En ruta","Entregado"];
+let index=pasos.indexOf(estado);
+
+let html="";
+
+pasos.forEach((paso,i)=>{
+html+=`<div class="step ${i<=index ? "active":""}">${paso}</div>`;
+});
+
+document.getElementById("resultadoRastreo").innerHTML+=
+`<div class="timeline">${html}</div>`;
+
+}
+
+/* RASTREO */
+async function rastrear(){
+
+let guia=document.getElementById("guiaBuscar").value;
+
+if(!guia){
+document.getElementById("resultadoRastreo").innerHTML="Ingrese una guía";
+return;
+}
+
+try{
+
+let res=await fetch("https://script.google.com/macros/s/AKfycbyOQucplHrR9n-yhwZghqiJfgPMQmMxW300WFnFKRaD-50v7iiU7iA_YSbFBukdxc9buw/exec"+guia);
+let data=await res.json();
+
+if(data.error){
+document.getElementById("resultadoRastreo").innerHTML="Guía no encontrada";
+return;
+}
+
+let clase=colorEstado(data.estado);
+
+document.getElementById("resultadoRastreo").innerHTML=
+`
+Guía: <b>${data.guia}</b><br>
+Cliente: ${data.cliente}<br>
+
+<div class="estado ${clase}">
+${data.estado}
+</div>
+`;
+
+pintarTimeline(data.estado);
+
+}catch(err){
+
+document.getElementById("resultadoRastreo").innerHTML="Error consultando";
 
 }
 
