@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuevo Pedido - Axis MC Logística // DLG Logistic </title>
+
+<style>
+body{
+font-family:Arial;
+background:#0c0f14;
+color:white;
+display:flex;
+justify-content:center;
+padding:20px;
+}
+
+.container{
+background:#1f2937;
+padding:30px;
+border-radius:12px;
+width:100%;
+max-width:600px;
+}
+
+input,select{
+width:100%;
+padding:10px;
+margin-top:8px;
+margin-bottom:15px;
+border:none;
+border-radius:6px;
+}
+
+button{
+width:100%;
+padding:12px;
+background:#22c55e;
+border:none;
+border-radius:8px;
+color:white;
+font-weight:bold;
+cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Crear Pedido DLG Logistic</h2>
+
+<input id="guia" placeholder="Número de Guía Axis" required>
+<input id="guiaDLG" placeholder="Número de Guía DLG" required>
+
+<input id="cliente" placeholder="Cliente">
+<input id="retiro" placeholder="Lugar de Retiro">
+<input id="telefono" placeholder="Teléfono">
+<input id="email" placeholder="Email">
+
+<input id="provincia" placeholder="Provincia">
+<input id="canton" placeholder="Cantón">
+
+<input id="senas" placeholder="Señas">
+<input id="ubicacion" placeholder="Link de ubicación (Google Maps)">
+<input id="horario" placeholder="Horario de entrega">
+
+<button onclick="enviarPedido()">Guardar Pedido</button>
+
+<p id="mensaje"></p>
+
+</div>
+
+<script>
+
+async function enviarPedido(){
+
+let data={
+guia:document.getElementById("guia").value,
+guiaDLG:document.getElementById("guiaDLG").value,
+cliente:document.getElementById("cliente").value,
+retiro:document.getElementById("retiro").value,
+telefono:document.getElementById("telefono").value,
+email:document.getElementById("email").value,
+provincia:document.getElementById("provincia").value,
+canton:document.getElementById("canton").value,
+senas:document.getElementById("senas").value,
+ubicacion:document.getElementById("ubicacion").value,
+horario:document.getElementById("horario").value
+};
+
+try{
+
+let res=await fetch("https://script.google.com/macros/s/AKfycbwmtL6Cdtlw6tpzAHgzdirXoFyVA3Z46fJPbuewtWL4Wb8U1l1ebtug7oMplR3h68I25w/exec",{
+method:"POST",
+body:new URLSearchParams(data)
+});
+
+let txt=await res.text();
+
+document.getElementById("mensaje").innerText="✅ Pedido guardado";
+
+}catch(err){
+
+document.getElementById("mensaje").innerText="❌ Error al guardar";
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
