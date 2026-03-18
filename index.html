@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Axis MC Logística | Sistema Pedido DLG Logistic</title>
+<title>Axis MC Logística | Sistema</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -205,7 +205,7 @@ margin-bottom:10px;
 
 <h3>Pedido Guardado</h3>
 <div class="guia" id="numeroGuia"></div>
-<pre id="popupTexto"></pre>
+<div id="popupTexto"></div>
 
 <button onclick="cerrarPopup()">Aceptar</button>
 
@@ -214,11 +214,11 @@ margin-bottom:10px;
 
 <script>
 
+const URL="https://script.google.com/macros/s/AKfycbzIsyYv4HhvFGxsRRp8HsvbcWrFmw59XKJ1klMtcFOYnmIgJz5OYCFQleiWvwtZp9NV-g/exec";
+
 /* GENERAR GUIA */
 function generarGuia(){
-
 let now=new Date();
-
 return "AX-"+
 now.getFullYear().toString().slice(2)+
 ("0"+(now.getMonth()+1)).slice(-2)+
@@ -226,7 +226,6 @@ now.getFullYear().toString().slice(2)+
 ("0"+now.getHours()).slice(-2)+
 ("0"+now.getMinutes()).slice(-2)+
 ("0"+now.getSeconds()).slice(-2);
-
 }
 
 /* ENVIAR */
@@ -254,19 +253,29 @@ horario:document.getElementById("horario").value
 
 try{
 
-await fetch("https://script.google.com/macros/s/AKfycbyOQucplHrR9n-yhwZghqiJfgPMQmMxW300WFnFKRaD-50v7iiU7iA_YSbFBukdxc9buw/exec",{
+await fetch(URL,{
 method:"POST",
 body:new URLSearchParams(data)
 });
 
 document.getElementById("numeroGuia").innerText="Guía: "+guia;
 
-document.getElementById("popupTexto").innerText=
-`Guía Axis: ${guia}
-Guía DLG: ${data.guiaDLG}
+document.getElementById("popupTexto").innerHTML=
+`
+<b>Guía Axis:</b> ${guia}<br>
+<b>Guía DLG:</b> ${data.guiaDLG || "-"}<br><br>
 
-Cliente: ${data.cliente}
-Teléfono: ${data.telefono}`;
+<b>Cliente:</b> ${data.cliente}<br>
+<b>Teléfono:</b> ${data.telefono}<br>
+<b>Email:</b> ${data.email}<br><br>
+
+<b>Provincia:</b> ${data.provincia}<br>
+<b>Cantón:</b> ${data.canton}<br><br>
+
+<b>Señas:</b> ${data.senas}<br>
+<b>Ubicación:</b> ${data.ubicacion}<br>
+<b>Horario:</b> ${data.horario}
+`;
 
 document.getElementById("popup").style.display="flex";
 
@@ -287,13 +296,10 @@ btn.disabled=false;
 
 /* COLORES */
 function colorEstado(estado){
-
 if(estado==="Pendiente") return "pendiente";
 if(estado==="En ruta") return "ruta";
 if(estado==="Entregado") return "entregado";
-
 return "";
-
 }
 
 /* TIMELINE */
@@ -310,13 +316,12 @@ html+=`<div class="step ${i<=index ? "active":""}">${paso}</div>`;
 
 document.getElementById("resultadoRastreo").innerHTML+=
 `<div class="timeline">${html}</div>`;
-
 }
 
 /* RASTREO */
 async function rastrear(){
 
-let guia=document.getElementById("guiaBuscar").value;
+let guia=document.getElementById("guiaBuscar").value.trim();
 
 if(!guia){
 document.getElementById("resultadoRastreo").innerHTML="Ingrese una guía";
@@ -325,8 +330,12 @@ return;
 
 try{
 
-let res=await fetch("https://script.google.com/macros/s/AKfycbyOQucplHrR9n-yhwZghqiJfgPMQmMxW300WFnFKRaD-50v7iiU7iA_YSbFBukdxc9buw/exec"+guia);
-let data=await res.json();
+let res=await fetch(URL+"?guia="+encodeURIComponent(guia));
+let text=await res.text();
+
+console.log("RESPUESTA:",text);
+
+let data=JSON.parse(text);
 
 if(data.error){
 document.getElementById("resultadoRastreo").innerHTML="Guía no encontrada";
@@ -337,8 +346,11 @@ let clase=colorEstado(data.estado);
 
 document.getElementById("resultadoRastreo").innerHTML=
 `
-Guía: <b>${data.guia}</b><br>
+Guía Axis: <b>${data.guia}</b><br>
+Guía DLG: ${data.guiaDLG || "-"}<br>
 Cliente: ${data.cliente}<br>
+Provincia: ${data.provincia}<br>
+Cantón: ${data.canton}<br>
 
 <div class="estado ${clase}">
 ${data.estado}
@@ -349,6 +361,7 @@ pintarTimeline(data.estado);
 
 }catch(err){
 
+console.error(err);
 document.getElementById("resultadoRastreo").innerHTML="Error consultando";
 
 }
